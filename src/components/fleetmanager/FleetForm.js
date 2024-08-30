@@ -54,7 +54,7 @@ function Fleetform() {
         comments: [], 
         imageUrls: [] 
       };
-      setCustomerFleet([...customerFleet, newUnit].sort((a, b) => {
+      setCustomerFleet([...customerFleet, newUnit].sort((a, b) => {    
         const priorityOrder = { low: 3, medium: 2, high: 1 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       }));
