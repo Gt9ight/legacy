@@ -17,7 +17,7 @@ function App() {
 
   return (
     <div >
-      <BrowserRouter basename="/plm">
+      <BrowserRouter basename="/legacy">
         <Routes>
           <Route path="/">
             <Route index element={<Home />} />
