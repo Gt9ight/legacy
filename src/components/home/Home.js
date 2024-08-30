@@ -23,7 +23,7 @@ const Home = () => {
 
     return (
         <div className="menu-container">
-            <h1 className="title">WELCOME TO YOUR FLEET MANAGER</h1>
+            <h1 className="title">Pro Legacy Management</h1>
             {!isMobile && <InfoCards />}
             <div className="fleet-checker">
                 <Link className="fleet-checkerbutton" to='/fleetform' >Fleet Checker</Link>
