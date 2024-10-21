@@ -37,7 +37,7 @@ function CustomerProgress() {
     const currentDate = new Date();
     const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
  // Format as YYYY-MM-DD
-    return `${formattedDate} Freedom`;
+    return `${formattedDate} Legacy`;
   };
 
   const handleStart = () => {
