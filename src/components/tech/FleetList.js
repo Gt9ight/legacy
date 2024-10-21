@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { db, storage } from '../utilis/Firebase';
 import { getDocs, collection, updateDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import './fleetLIst.css';
+import './fleetLIst.css'
 import imageCompression from 'browser-image-compression';
 import { useSwipeable } from 'react-swipeable';
 import { Oval } from 'react-loader-spinner';
@@ -133,6 +133,7 @@ const FleetList = () => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.multiple = true;
+
     fileInput.onchange = (e) => {
       const files = Array.from(e.target.files);
       compressAndUploadImages(currentUnitId, files, comment1, comment2, true);
@@ -253,6 +254,7 @@ const FleetList = () => {
         {/* <button className='logout'>Log Out</button> */}
       </div>
       <h2 className='fleetList-title'>Fleets</h2>
+      <h4  className='imagesteps'>Upload Images From Photo Library</h4>
       <div className="category-cards">
         {Object.keys(ByCustomer).map((Fleetcustomer) => (
           <div key={Fleetcustomer} className="category-card">
@@ -278,7 +280,7 @@ const FleetList = () => {
                   })
                   .map((unit) => (
                     <li key={unit.id} className={`unit-item ${unit.done ? 'done' : ''} ${unit.priority}`}>
-                      <strong>Unit Number:</strong> {unit.UnitNumber} <strong>Priority:</strong> {unit.priority}
+                      <strong>Unit Number:</strong>{unit.unitType} {unit.UnitNumber} <strong>Priority:</strong> {unit.priority}
                       <ul>
                         {unit.TaskSpecifics &&
                           unit.TaskSpecifics.length > 0 &&
