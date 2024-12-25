@@ -20,7 +20,7 @@ const FleetList = () => {
           id: doc.id, // Include the document ID
           ...doc.data(),
         }));
-    
+
         // Group fleets by fleetName and avoid duplication of units
         const groupedFleets = data.reduce((acc, fleet) => {
           const existingFleet = acc.find((f) => f.fleetName === fleet.fleetName);
@@ -36,7 +36,7 @@ const FleetList = () => {
           }
           return acc;
         }, []);
-    
+
         // Fetch and update image URLs for all units
         const updatedData = await Promise.all(groupedFleets.map(async (fleet) => {
           const updatedUnits = await Promise.all(fleet.units.map(async (unit) => {
@@ -54,17 +54,16 @@ const FleetList = () => {
           }));
           return { ...fleet, units: updatedUnits };
         }));
-    
+
         setFleetData(updatedData);
       } catch (error) {
         console.error("Error fetching fleet data: ", error);
       }
     };
-    
-    
-  
+
     fetchFleetData();
   }, []);
+
   const handleFleetClick = (fleet) => {
     if (selectedFleet === fleet.fleetName) {
       setSelectedFleet(null);
@@ -86,28 +85,24 @@ const FleetList = () => {
   };
 
   const handleDone = async (fleetId, unitIndex) => {
-    console.log('Fleet ID:', fleetId);
-    console.log('Fleet Data:', fleetData);
-  
     try {
       const fleetIndex = fleetData.findIndex((f) => f.id === fleetId);
-      console.log('Fleet Index:', fleetIndex);
       if (fleetIndex === -1) {
         throw new Error('Fleet ID not found in fleetData');
       }
-  
+
       const updatedFleetData = [...fleetData];
       const unit = updatedFleetData[fleetIndex].units[unitIndex];
       if (!unit) {
         throw new Error('Unit not found');
       }
-  
+
       // Toggle the done state
       unit.done = !unit.done;
-  
+
       // Update the state
       setFleetData(updatedFleetData);
-  
+
       // Update Firebase
       const fleetRef = doc(db, 'fleets', fleetId);
       await updateDoc(fleetRef, { units: updatedFleetData[fleetIndex].units });
@@ -116,6 +111,19 @@ const FleetList = () => {
     }
   };
 
+  // Calculate the completed units count and display as "completedUnits/totalUnits"
+  const getCompletedUnitsCount = (units) => {
+    const totalUnits = units.length;
+    const completedUnits = units.filter(unit => unit.done).length;
+    return `${completedUnits}/${totalUnits} units complete`;
+  };
+
+  // Calculate the progress percentage
+  const calculateProgress = (units) => {
+    const totalUnits = units.length;
+    const completedUnits = units.filter(unit => unit.done).length;
+    return (completedUnits / totalUnits) * 100;
+  };
 
   return (
     <div className="fleet-list-container">
@@ -125,69 +133,82 @@ const FleetList = () => {
         <p className="no-data-message">No fleet data available.</p>
       ) : (
         <div className="fleet-list">
-          {fleetData.map((fleet, fleetIndex) => (
-            <div key={fleetIndex} className="fleet-card">
-      <button className="fleet-card-button" onClick={() => handleFleetClick(fleet)}>
-        <h2 className="fleet-name">{fleet.fleetName}</h2>
-        <p className="fleet-info">Units: {fleet.units.length}</p>
-      </button>
-              
-              {selectedFleet === fleet.fleetName && (
-                <div className="fleet-details">
-                  <ul className="unit-list">
-                    {fleet.units.map((unit, unitIndex) => (
-                                            <li
-                                            key={unitIndex}
-                                            className={`unit-card ${unit.done ? 'unit-done' : ''}`}
-                                          >
-                        <div className="unit-header">
-                          <h3>Unit {unit.unitNumber}</h3>
-                          <p><strong>Type:</strong> {unit.unitType}</p>
-                          <p><strong>Status:</strong> {unit.emergency}</p>
-                        </div>
+          {fleetData.map((fleet, fleetIndex) => {
+            const completedUnitsCount = getCompletedUnitsCount(fleet.units); // Get completed units count
+            const progress = calculateProgress(fleet.units); // Calculate progress
+            return (
+              <div key={fleetIndex} className="fleet-card">
+                <button className="fleet-card-button" onClick={() => handleFleetClick(fleet)}>
+                  <h2 className="fleet-name">{fleet.fleetName}</h2>
+                  <p className="fleet-info">{completedUnitsCount}</p> {/* Display completed units count */}
+                  <div className="progress-bar-container">
+                    <div className="progress-bar-background">
+                      <div
+                        className="progress-bar"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                    <p className="progress-text">{Math.round(progress)}% Completed</p>
+                  </div>
+                </button>
 
-                        <div className="unit-specifics">
-                          <h4>Specifics</h4>
-                          {unit.specifics.length > 0 ? (
-                            <ul>
-                              {unit.specifics.map((specific, i) => (
-                                <li key={i}>
-                                  <p><strong>Service:</strong> {specific.serviceNeeded}</p>
-                                  <p><strong>Tread Depth:</strong> {specific.treadDepth}</p>
-                                  <p><strong>Tire Needed:</strong> {specific.tireNeeded}</p>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p>No specifics added</p>
-                          )}
-                        </div>
-
-                        <div className="image-gallery">
-                          {unit.images.length > 0 ? (
-                            unit.images.map((image, i) => (
-                              <div key={i} className="image-item" onClick={() => handleImageClick(image.uri)}>
-                                <img src={image.uri} alt={image.label} className="unit-image" />
-                                <p>{image.label}</p>
-                              </div>
-                            ))
-                          ) : (
-                            <p>No images uploaded</p>
-                          )}
-                        </div>
-                        <button
-                          className="done-button"
-                          onClick={() => handleDone(fleet.id, unitIndex)}
+                {selectedFleet === fleet.fleetName && (
+                  <div className="fleet-details">
+                    <ul className="unit-list">
+                      {fleet.units.map((unit, unitIndex) => (
+                        <li
+                          key={unitIndex}
+                          className={`unit-card ${unit.done ? 'unit-done' : ''}`}
                         >
-                          {unit.done ? 'Undo' : 'Done'}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
+                          <div className="unit-header">
+                            <h3>Unit {unit.unitNumber}</h3>
+                            <p><strong>Type:</strong> {unit.unitType}</p>
+                            <p><strong>Status:</strong> {unit.emergency}</p>
+                          </div>
+
+                          <div className="unit-specifics">
+                            <h4>Specifics</h4>
+                            {unit.specifics.length > 0 ? (
+                              <ul>
+                                {unit.specifics.map((specific, i) => (
+                                  <li key={i}>
+                                    <p><strong>Service:</strong> {specific.serviceNeeded}</p>
+                                    <p><strong>Tread Depth:</strong> {specific.treadDepth}</p>
+                                    <p><strong>Tire Needed:</strong> {specific.tireNeeded}</p>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p>No specifics added</p>
+                            )}
+                          </div>
+
+                          <div className="image-gallery">
+                            {unit.images.length > 0 ? (
+                              unit.images.map((image, i) => (
+                                <div key={i} className="image-item" onClick={() => handleImageClick(image.uri)}>
+                                  <img src={image.uri} alt={image.label} className="unit-image" />
+                                  <p>{image.label}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p>No images uploaded</p>
+                            )}
+                          </div>
+                          <button
+                            className="done-button"
+                            onClick={() => handleDone(fleet.id, unitIndex)}
+                          >
+                            {unit.done ? 'Undo' : 'Done'}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
