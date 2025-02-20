@@ -6,14 +6,13 @@ import { getFirestore, doc, getDoc, setDoc, collection, writeBatch, query, getDo
 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDUwSQ8RlDzcwPY5Eq2wdmpLKRHqSw9NHw",
-  authDomain: "plm-fleet.firebaseapp.com",
-  projectId: "plm-fleet",
-  storageBucket: "plm-fleet.appspot.com",
-  messagingSenderId: "581262701095",
-  appId: "1:581262701095:web:9cebef65a6c3d3f6f45402"
+  apiKey: "AIzaSyBlYi4ZXDUw-6C7AAy4afYP0yt612BW24Q",
+  authDomain: "treadtracker-290b8.firebaseapp.com",
+  projectId: "treadtracker-290b8",
+  storageBucket: "treadtracker-290b8.firebasestorage.app",
+  messagingSenderId: "1036884014457",
+  appId: "1:1036884014457:web:cb9f86418b8173868baba8"
 };
-
   
 
   const app = initializeApp(firebaseConfig);

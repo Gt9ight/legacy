@@ -1,223 +1,130 @@
 import React, { useEffect, useState } from 'react';
-import { db, storage } from '../utilis/Firebase';
-import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../utilis/Firebase';
+import { collection, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import './fleetLIst.css';
-import imageCompression from 'browser-image-compression';
-
 
 const FleetList = () => {
-  const [fleetData, setFleetData] = useState([]);
+  const [fleets, setFleets] = useState({});
+  const [loading, setLoading] = useState(true);
   const [selectedFleet, setSelectedFleet] = useState(null);
-  const [enlargedImage, setEnlargedImage] = useState(null); // For storing enlarged image
-  const [isModalOpen, setIsModalOpen] = useState(false); // For controlling modal visibility
 
   useEffect(() => {
-    const fetchFleetData = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'fleets'));
-        const data = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Include the document ID
-          ...doc.data(),
-        }));
+    const unsubscribe = onSnapshot(collection(db, "fleets"), (snapshot) => {
+      const fleetData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setFleets(groupByDate(fleetData));
+      setLoading(false);
+    });
 
-        // Group fleets by fleetName and avoid duplication of units
-        const groupedFleets = data.reduce((acc, fleet) => {
-          const existingFleet = acc.find((f) => f.fleetName === fleet.fleetName);
-          if (existingFleet) {
-            // Avoid duplicate units by checking their unitNumber or some unique identifier
-            fleet.units.forEach(unit => {
-              if (!existingFleet.units.some(existingUnit => existingUnit.unitNumber === unit.unitNumber)) {
-                existingFleet.units.push(unit);
-              }
-            });
-          } else {
-            acc.push(fleet);
-          }
-          return acc;
-        }, []);
-
-        // Fetch and update image URLs for all units
-        const updatedData = await Promise.all(groupedFleets.map(async (fleet) => {
-          const updatedUnits = await Promise.all(fleet.units.map(async (unit) => {
-            const updatedImages = await Promise.all(unit.images.map(async (image) => {
-              try {
-                const imageRef = ref(storage, image.uri);
-                const imageUrl = await getDownloadURL(imageRef);
-                return { ...image, uri: imageUrl };
-              } catch (error) {
-                console.error("Error fetching image URL: ", error);
-                return image;
-              }
-            }));
-            return { ...unit, images: updatedImages };
-          }));
-          return { ...fleet, units: updatedUnits };
-        }));
-
-        setFleetData(updatedData);
-      } catch (error) {
-        console.error("Error fetching fleet data: ", error);
-      }
-    };
-
-    fetchFleetData();
+    return () => unsubscribe(); // Cleanup on unmount
   }, []);
 
-  const handleFleetClick = (fleet) => {
-    if (selectedFleet === fleet.fleetName) {
-      setSelectedFleet(null);
-    } else {
-      setSelectedFleet(fleet.fleetName);
-    }
+  // Group fleets by date
+  const groupByDate = (fleets) => {
+    return fleets.reduce((acc, fleet) => {
+      const { fleetDate } = fleet;
+      if (!acc[fleetDate]) {
+        acc[fleetDate] = [];
+      }
+      acc[fleetDate].push(fleet);
+      return acc;
+    }, {});
   };
 
-  // Handle image click to enlarge
-  const handleImageClick = (imageUri) => {
-    setEnlargedImage(imageUri); // Set the clicked image URL
-    setIsModalOpen(true); // Open the modal
-  };
-
-  // Handle closing the modal
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEnlargedImage(null);
-  };
-
-  const handleDone = async (fleetId, unitIndex) => {
+  // Toggle unit completion in Firebase
+  const toggleUnitCompletion = async (fleetId, unitIndex) => {
     try {
-      const fleetIndex = fleetData.findIndex((f) => f.id === fleetId);
-      if (fleetIndex === -1) {
-        throw new Error('Fleet ID not found in fleetData');
-      }
+      const fleetRef = doc(db, "fleets", fleetId);
+      const updatedUnits = selectedFleet.map((fleet) => {
+        return {
+          ...fleet,
+          units: fleet.units.map((unit, index) =>
+            index === unitIndex ? { ...unit, completed: !unit.completed } : unit
+          ),
+        };
+      });
 
-      const updatedFleetData = [...fleetData];
-      const unit = updatedFleetData[fleetIndex].units[unitIndex];
-      if (!unit) {
-        throw new Error('Unit not found');
-      }
-
-      // Toggle the done state
-      unit.done = !unit.done;
-
-      // Update the state
-      setFleetData(updatedFleetData);
-
-      // Update Firebase
-      const fleetRef = doc(db, 'fleets', fleetId);
-      await updateDoc(fleetRef, { units: updatedFleetData[fleetIndex].units });
+      await updateDoc(fleetRef, { units: updatedUnits[0].units }); // Update units in Firebase
+      setSelectedFleet(updatedUnits); // Update local state for UI sync
     } catch (error) {
-      console.error('Error updating unit status:', error);
+      console.error("Error toggling unit completion:", error);
     }
   };
 
-  // Calculate the completed units count and display as "completedUnits/totalUnits"
-  const getCompletedUnitsCount = (units) => {
-    const totalUnits = units.length;
-    const completedUnits = units.filter(unit => unit.done).length;
-    return `${completedUnits}/${totalUnits} units complete`;
+  // Calculate completion percentage
+  const getCompletionPercentage = (fleet) => {
+    const totalUnits = fleet.reduce((sum, f) => sum + (f.units?.length || 0), 0);
+    const completedUnits = fleet.reduce(
+      (sum, f) => sum + (f.units?.filter((unit) => unit.completed).length || 0),
+      0
+    );
+    return totalUnits === 0 ? 0 : Math.round((completedUnits / totalUnits) * 100);
   };
 
-  // Calculate the progress percentage
-  const calculateProgress = (units) => {
-    const totalUnits = units.length;
-    const completedUnits = units.filter(unit => unit.done).length;
-    return (completedUnits / totalUnits) * 100;
-  };
+  if (loading) {
+    return <div className="loader">Loading...</div>;
+  }
 
   return (
-    <div className="fleet-list-container">
-      <h1 className="fleet-list-title">Fleet Data</h1>
-      
-      {fleetData.length === 0 ? (
-        <p className="no-data-message">No fleet data available.</p>
+    <div className="fleet-report">
+      <h2>Fleet List</h2>
+      {Object.keys(fleets).length === 0 ? (
+        <p>No fleets available.</p>
       ) : (
         <div className="fleet-list">
-          {fleetData.map((fleet, fleetIndex) => {
-            const completedUnitsCount = getCompletedUnitsCount(fleet.units); // Get completed units count
-            const progress = calculateProgress(fleet.units); // Calculate progress
+          {Object.keys(fleets).map((fleetDate) => {
+            const completionPercentage = getCompletionPercentage(fleets[fleetDate]);
             return (
-              <div key={fleetIndex} className="fleet-card">
-                <button className="fleet-card-button" onClick={() => handleFleetClick(fleet)}>
-                  <h2 className="fleet-name">{fleet.fleetName}</h2>
-                  <p className="fleet-info">{completedUnitsCount}</p> {/* Display completed units count */}
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-background">
-                      <div
-                        className="progress-bar"
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                    <p className="progress-text">{Math.round(progress)}% Completed</p>
-                  </div>
-                </button>
-
-                {selectedFleet === fleet.fleetName && (
-                  <div className="fleet-details">
-                    <ul className="unit-list">
-                      {fleet.units.map((unit, unitIndex) => (
-                        <li
-                          key={unitIndex}
-                          className={`unit-card ${unit.done ? 'unit-done' : ''}`}
-                        >
-                          <div className="unit-header">
-                            <h3>Unit {unit.unitNumber}</h3>
-                            <p><strong>Type:</strong> {unit.unitType}</p>
-                            <p><strong>Status:</strong> {unit.emergency}</p>
-                          </div>
-
-                          <div className="unit-specifics">
-                            <h4>Specifics</h4>
-                            {unit.specifics.length > 0 ? (
-                              <ul>
-                                {unit.specifics.map((specific, i) => (
-                                  <li key={i}>
-                                    <p><strong>Service:</strong> {specific.serviceNeeded}</p>
-                                    <p><strong>Tread Depth:</strong> {specific.treadDepth}</p>
-                                    <p><strong>Tire Needed:</strong> {specific.tireNeeded}</p>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p>No specifics added</p>
-                            )}
-                          </div>
-
-                          <div className="image-gallery">
-                            {unit.images.length > 0 ? (
-                              unit.images.map((image, i) => (
-                                <div key={i} className="image-item" onClick={() => handleImageClick(image.uri)}>
-                                  <img src={image.uri} alt={image.label} className="unit-image" />
-                                  <p>{image.label}</p>
-                                </div>
-                              ))
-                            ) : (
-                              <p>No images uploaded</p>
-                            )}
-                          </div>
-                          <button
-                            className="done-button"
-                            onClick={() => handleDone(fleet.id, unitIndex)}
-                          >
-                            {unit.done ? 'Undo' : 'Done'}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              <div key={fleetDate} className="fleet-card" onClick={() => setSelectedFleet(fleets[fleetDate])}>
+                <p><strong>Fleet Date:</strong> {fleetDate}</p>
+                <p><strong>Units:</strong> {fleets[fleetDate].reduce((sum, fleet) => sum + (fleet.units?.length || 0), 0)}</p>
+                
+                {/* Progress Bar */}
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${completionPercentage}%` }}></div>
+                </div>
+                <p className="progress-text">{completionPercentage}% Completed</p>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Modal for Enlarged Image */}
-      {isModalOpen && (
-        <div className="image-modal" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <img src={enlargedImage} alt="Enlarged" className="enlarged-image" />
-            <button className="close-modal" onClick={closeModal}>X</button>
+      {selectedFleet && (
+        <div className="modal">
+          <div className="modal-content">
+            <h3>Fleet Details</h3>
+            <div className="unit-list">
+              {selectedFleet.map((fleet) => (
+                <div key={fleet.id}>
+                  {fleet.units.map((unit, unitIndex) => (
+                    <div key={unitIndex} className={`unit-card ${unit.completed ? "completed" : ""}`}>
+                      <h4>{unit.unitType} {unit.unitNumber}</h4>
+                      <p><strong>Urgency:</strong> {unit.urgency}</p>
+                      {unit.specifics?.length > 0 && (
+                        <div className="specifics-container">
+                          <strong>Specifics:</strong>
+                          {unit.specifics.map((specific, i) => (
+                            <p key={i} className="specific-text">
+                              {specific.position} - {specific.ServiceType} - {specific.treadDepth} - {specific.selectedTire}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => toggleUnitCompletion(fleet.id, unitIndex)}
+                        className={`complete-button ${unit.completed ? "completed" : ""}`}
+                      >
+                        {unit.completed ? "Completed" : "Mark as Complete"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setSelectedFleet(null)}>Close</button>
           </div>
         </div>
       )}
