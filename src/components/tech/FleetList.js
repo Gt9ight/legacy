@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { db } from "../utilis/Firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import "./fleetLIst.css";
 
 const FleetList = () => {
@@ -28,6 +28,19 @@ const FleetList = () => {
     } catch (err) {
       setError("Error fetching fleet data.");
       console.error("Error: ", err);
+    }
+  };
+
+  const markUnitComplete = async (unitIndex) => {
+    if (!fleetData) return;
+    try {
+      const fleetDocRef = doc(db, "fleets", searchUID);
+      const updatedUnits = [...fleetData.units];
+      updatedUnits[unitIndex] = { ...updatedUnits[unitIndex], completed: true };
+      await updateDoc(fleetDocRef, { units: updatedUnits });
+      setFleetData((prev) => ({ ...prev, units: updatedUnits }));
+    } catch (err) {
+      console.error("Error updating unit: ", err);
     }
   };
 
@@ -84,6 +97,13 @@ const FleetList = () => {
                       ))}
                     </div>
                   )}
+                  <button 
+                    onClick={() => markUnitComplete(index)} 
+                    className="complete-button" 
+                    disabled={unit.completed}
+                  >
+                    {unit.completed ? "Completed" : "Mark as Complete"}
+                  </button>
                 </div>
               ))}
             </div>
