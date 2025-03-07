@@ -35,9 +35,14 @@ const FleetList = () => {
     if (!fleetData || !selectedFleet) return;
     try {
       const updatedUnits = [...selectedFleet.units];
-      updatedUnits[unitIndex] = { ...updatedUnits[unitIndex], completed: true };
+      
+      // Toggle completion status
+      updatedUnits[unitIndex] = { 
+        ...updatedUnits[unitIndex], 
+        completed: !updatedUnits[unitIndex].completed 
+      };
   
-      // Immediately update both `fleetData` and `selectedFleet`
+      // Update state immediately
       setFleetData((prev) => ({
         ...prev,
         units: updatedUnits,
@@ -55,6 +60,8 @@ const FleetList = () => {
       console.error("Error updating unit: ", err);
     }
   };
+  
+  
   
   
   return (
@@ -113,13 +120,13 @@ const FleetList = () => {
       ))}
     </div>
   )}
-  <button 
-    onClick={() => markUnitComplete(index)} 
-    className="complete-button" 
-    disabled={unit.completed}
-  >
-    {unit.completed ? "Completed" : "Mark as Complete"}
-  </button>
+<button 
+  onClick={() => markUnitComplete(index)} 
+  className="complete-button"
+>
+  {unit.completed ? "Unmark Complete" : "Mark as Complete"}
+</button>
+
 </div>
 
 
