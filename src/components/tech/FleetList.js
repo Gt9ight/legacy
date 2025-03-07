@@ -32,18 +32,31 @@ const FleetList = () => {
   };
 
   const markUnitComplete = async (unitIndex) => {
-    if (!fleetData) return;
+    if (!fleetData || !selectedFleet) return;
     try {
-      const fleetDocRef = doc(db, "fleets", searchUID);
-      const updatedUnits = [...fleetData.units];
+      const updatedUnits = [...selectedFleet.units];
       updatedUnits[unitIndex] = { ...updatedUnits[unitIndex], completed: true };
+  
+      // Immediately update both `fleetData` and `selectedFleet`
+      setFleetData((prev) => ({
+        ...prev,
+        units: updatedUnits,
+      }));
+  
+      setSelectedFleet((prev) => ({
+        ...prev,
+        units: updatedUnits,
+      }));
+  
+      // Update Firestore
+      const fleetDocRef = doc(db, "fleets", searchUID);
       await updateDoc(fleetDocRef, { units: updatedUnits });
-      setFleetData((prev) => ({ ...prev, units: updatedUnits }));
     } catch (err) {
       console.error("Error updating unit: ", err);
     }
   };
-
+  
+  
   return (
     <div className="fleet-container">
       <div className="fleet-card">
@@ -78,33 +91,38 @@ const FleetList = () => {
             <h4>Units:</h4>
             <div className="fleet-units-container">
               {selectedFleet.units.map((unit, index) => (
-                <div key={index} className="fleet-unit-card">
-                  <h5 className="unit-title">Unit {unit.unitNumber}</h5>
-                  <p><strong>Type:</strong> {unit.unitType}</p>
-                  <p><strong>Urgency:</strong> <span className={`urgency-${unit.urgency.toLowerCase()}`}>{unit.urgency}</span></p>
-                  <h6>Services:</h6>
-                  <ul className="service-list">
-                    {unit.specifics.map((service, sIndex) => (
-                      <li key={sIndex} className="service-item">
-                        {service.ServiceType} - {service.position} - {service.selectedTire} ({service.treadDepth})
-                      </li>
-                    ))}
-                  </ul>
-                  {unit.imageUrl && unit.imageUrl.length > 0 && (
-                    <div className="fleet-images">
-                      {unit.imageUrl.map((url, imgIndex) => (
-                        <img key={imgIndex} src={url} alt={`Unit ${unit.unitNumber}`} className="fleet-image" />
-                      ))}
-                    </div>
-                  )}
-                  <button 
-                    onClick={() => markUnitComplete(index)} 
-                    className="complete-button" 
-                    disabled={unit.completed}
-                  >
-                    {unit.completed ? "Completed" : "Mark as Complete"}
-                  </button>
-                </div>
+                <div
+  key={index}
+  className={`fleet-unit-card ${unit.completed ? 'unit-completed' : ''}`} // Conditionally add the completed class
+>
+  <h5 className="unit-title">Unit {unit.unitNumber}</h5>
+  <p><strong>Type:</strong> {unit.unitType}</p>
+  <p><strong>Urgency:</strong> <span className={`urgency-${unit.urgency.toLowerCase()}`}>{unit.urgency}</span></p>
+  <h6>Services:</h6>
+  <ul className="service-list">
+    {unit.specifics.map((service, sIndex) => (
+      <li key={sIndex} className="service-item">
+        {service.ServiceType} - {service.position} - {service.selectedTire} ({service.treadDepth})
+      </li>
+    ))}
+  </ul>
+  {unit.imageUrl && unit.imageUrl.length > 0 && (
+    <div className="fleet-images">
+      {unit.imageUrl.map((url, imgIndex) => (
+        <img key={imgIndex} src={url} alt={`Unit ${unit.unitNumber}`} className="fleet-image" />
+      ))}
+    </div>
+  )}
+  <button 
+    onClick={() => markUnitComplete(index)} 
+    className="complete-button" 
+    disabled={unit.completed}
+  >
+    {unit.completed ? "Completed" : "Mark as Complete"}
+  </button>
+</div>
+
+
               ))}
             </div>
           </div>

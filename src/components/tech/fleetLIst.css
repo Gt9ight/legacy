@@ -106,6 +106,7 @@
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
 }
 
 .unit-title {
@@ -140,3 +141,11 @@
   border-radius: 5px;
   object-fit: cover;
 }
+.unit-completed {
+  background-color: #4CAF50; /* Green */
+  color: white;
+  border: 1px solid #388E3C;
+}
+
+
+ 
