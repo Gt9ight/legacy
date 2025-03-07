@@ -12,6 +12,7 @@ const firebaseConfig = {
   storageBucket: "treadtracker-290b8.firebasestorage.app",
   messagingSenderId: "1036884014457",
   appId: "1:1036884014457:web:cb9f86418b8173868baba8"
+  
 };
   
 
