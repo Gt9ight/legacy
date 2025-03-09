@@ -132,9 +132,12 @@ const FleetList = () => {
 
               ))}
             </div>
+
           </div>
         )}
+        <p>Once done simply close the page</p>
       </div>
+      
     </div>
   );
 };

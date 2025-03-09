@@ -20,7 +20,10 @@ function App() {
       <BrowserRouter basename="/legacy">
         <Routes>
           <Route path="/">
-            <Route index element={<FleetList />} />
+            <Route index element={<Home />} />
+            <Route path="/fleetform" element={<Fleetform/>} />
+            <Route path="/customer" element={<Customerprogress/>}/>
+            <Route path="fleetlist" element={<FleetList/>}/>
           </Route>
         </Routes>
       </BrowserRouter>
