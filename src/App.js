@@ -3,7 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useContext } from "react";
 import Home from "./components/home/Home";
 import Customerprogress from "./components/customer/CustomerProgress";
+import Login from "./components/auth/Login";
+import Signup from "./components/auth/SignUp";
 import FleetList from "./components/tech/FleetList";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 function App() {
   // const { currentUser } = useContext(AuthContext);
 
@@ -18,10 +21,18 @@ function App() {
   return (
     <div >
       <BrowserRouter basename="/legacy">
-        <Routes>
-          <Route path="/">
-            <Route index element={<FleetList />} />
-          </Route>
+      <Routes>
+          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/fleetlist"
+            element={
+              <ProtectedRoute>
+                <FleetList />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </div>

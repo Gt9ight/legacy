@@ -19,7 +19,7 @@ const firebaseConfig = {
   const app = initializeApp(firebaseConfig);
   export const db = getFirestore();
   export const storage = getStorage()
-
+  export const auth = getAuth(app);
 
 
 
@@ -50,7 +50,7 @@ const firebaseConfig = {
     prompt: 'select_account'
   });
 
-  export const auth = getAuth()
+
   export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
 
 
