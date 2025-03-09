@@ -35,12 +35,20 @@ const FleetList = () => {
   };
 
   const markUnitComplete = async (unitIndex) => {
-    if (!fleetData || !selectedFleet) return;
+    if (!fleetData || !selectedFleet || !userData) return;
+  
     try {
       const updatedUnits = [...selectedFleet.units];
-      updatedUnits[unitIndex] = { 
-        ...updatedUnits[unitIndex], 
-        completed: !updatedUnits[unitIndex].completed 
+  
+      updatedUnits[unitIndex] = {
+        ...updatedUnits[unitIndex],
+        completed: !updatedUnits[unitIndex].completed,
+        completedBy: updatedUnits[unitIndex].completed 
+          ? null // If unmarking, remove completedBy
+          : `${userData.firstName} ${userData.lastName}`, // Save user's full name
+        completedAt: updatedUnits[unitIndex].completed 
+          ? null 
+          : new Date().toISOString(), // Store completion timestamp
       };
   
       setFleetData((prev) => ({ ...prev, units: updatedUnits }));
@@ -52,6 +60,7 @@ const FleetList = () => {
       console.error("Error updating unit: ", err);
     }
   };
+  
 
   const handleImageUpload = async (event, unitIndex) => {
     if (!event.target.files[0]) return;
@@ -151,6 +160,9 @@ const FleetList = () => {
                   <button onClick={() => markUnitComplete(index)} className="complete-button">
                     {unit.completed ? "Unmark Complete" : "Mark as Complete"}
                   </button>
+                  <p><strong>Completed By:</strong> {unit.completedBy ? unit.completedBy : "Not Completed"}</p>
+<p><strong>Completed At:</strong> {unit.completedAt ? new Date(unit.completedAt).toLocaleString() : "N/A"}</p>
+
                 </div>
               ))}
             </div>
