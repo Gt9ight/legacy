@@ -3,12 +3,13 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f4f4f4;
+  background: linear-gradient(135deg, #4e57b1, #06104c); /* Gradient background */
   padding: 20px;
 }
 
 .fleet-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
+
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

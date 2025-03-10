@@ -1,0 +1,93 @@
+/* Container to center the login form */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #4e57b1, #06104c); /* Gradient background */
+    padding: 20px;
+  }
+  
+  /* Title styles */
+  .title {
+    font-size: 2.5rem;
+    color: white;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+  
+  /* Error message styles */
+  .error {
+    color: #f44336;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+  
+  /* Form container styles */
+  .form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 380px;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Input field styles */
+  .input {
+    width: 100%;
+    padding: 14px 20px;
+    margin: 10px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .input:focus {
+    border-color: #4d63e1;
+    outline: none;
+    box-shadow: 0 0 8px rgba(77, 99, 225, 0.5);
+  }
+  
+  /* Button styles */
+  .button {
+    padding: 14px;
+    background-color: #4d63e1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .button:hover {
+    background-color: #3b52c8;
+  }
+  
+  /* Sign-up text styles */
+  .signup-text {
+    font-size: 1rem;
+    margin-top: 20px;
+    color: #f1f1f1;
+  }
+  
+  /* Sign-up button link styles */
+  .signup-button {
+    background: none;
+    color: #cad0f2;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+  
