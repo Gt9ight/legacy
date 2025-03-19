@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/legacy/static/css/main.3bbc8437.css",
-    "main.js": "/legacy/static/js/main.d9770fa3.js",
+    "main.css": "/legacy/static/css/main.aa26944e.css",
+    "main.js": "/legacy/static/js/main.ada9b2a7.js",
     "static/js/453.1492f495.chunk.js": "/legacy/static/js/453.1492f495.chunk.js",
     "static/media/tireselect.png": "/legacy/static/media/tireselect.c90bc05888b5b5fb2309.png",
     "index.html": "/legacy/index.html",
-    "main.3bbc8437.css.map": "/legacy/static/css/main.3bbc8437.css.map",
-    "main.d9770fa3.js.map": "/legacy/static/js/main.d9770fa3.js.map",
+    "main.aa26944e.css.map": "/legacy/static/css/main.aa26944e.css.map",
+    "main.ada9b2a7.js.map": "/legacy/static/js/main.ada9b2a7.js.map",
     "453.1492f495.chunk.js.map": "/legacy/static/js/453.1492f495.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.3bbc8437.css",
-    "static/js/main.d9770fa3.js"
+    "static/css/main.aa26944e.css",
+    "static/js/main.ada9b2a7.js"
   ]
 }
