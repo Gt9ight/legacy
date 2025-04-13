@@ -1,591 +1,270 @@
-import React, {useState, useEffect} from 'react'
-import FleetSpecifics from './FleetSpecifics';
-import './fleetform.css';
-import { db, createFleetDatabase, storage } from '../utilis/Firebase';
-import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import imageCompression from 'browser-image-compression';
-import { useSwipeable } from 'react-swipeable';
-import { Oval } from 'react-loader-spinner';
+import React, { useEffect, useState } from "react";
+import { getAuth } from "firebase/auth";
+import { db, storage } from "../utilis/Firebase";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import Dropzone from "react-dropzone";
+import './fleetform.css'
 
 
 
-function Fleetform() {
-  const [newCustomer, setNewCustomer] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [customers, setCustomers] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [priority, setPriority] = useState('')
-  const [customerFleet, setCustomerFleet] = useState([]);
-  const [unitType, setUnitType] = useState('');
-  const [currentUnitIndex, setCurrentUnitIndex] = useState(null);
-  const [showPopup, setShowPopup] = useState(false);
-  const [showCustomerCategory, setShowCustomerForCategory] = useState(null);
-  const [FleetsFromFirestore, setFleetsFromFirestore] = useState([]);
-  const [comment1, setComment1] = useState('');
-  const [commentInputVisible, setCommentInputVisible] = useState(false);
-  const [isImagePopupVisible, setImagePopupVisible] = useState(false);
-  const [selectedImageUrl, setSelectedImageUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [comment2, setComment2] = useState('');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showError, setShowError] = useState(false); 
-  const [showUnitInputs, setShowUnitInputs] = useState(false);
-  const [showSwipeableCards, setShowSwipeableCards] = useState(false);
-  const [showWarning, setShowWarning] = useState(false)
-
-  const generateCustomerName = () => {
-    const currentDate = new Date();
-    const formattedDate = `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
- // Format as YYYY-MM-DD
-    return `${formattedDate} Legacy`;
-  };
-
-  const handleStart = () => {
-    const customerName = generateCustomerName();
-    setSelectedCustomer(customerName);
-
-
-    setCustomerFleet([...customerFleet]);
-    setShowUnitInputs(true);
-  };
-  
-
-  const handleNewCustomerChange = (e) => {
-    setNewCustomer(e.target.value);
-  };
-
-  const handleCreateNewCustomer = () => {
-    if (newCustomer.trim() !== '') {
-      setSelectedCustomer(newCustomer); 
-      setCustomers([...customers, newCustomer]);
-      setNewCustomer('');
-    }
-
-  };  
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  }
-
-  const handleAddingUnitNumber = () => {
-    if (inputValue.trim() !== '' && unitType) {
-      const newUnit = {
-        UnitNumber: inputValue,
-        customer: selectedCustomer,
-        TaskSpecifics: [],
-        unitType,
-        priority,
-        comments: [], 
-        imageUrls: [] 
-      };
-      setCustomerFleet([...customerFleet, newUnit].sort((a, b) => {
-        const priorityOrder = { low: 3, medium: 2, high: 1 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-      }));
-      setInputValue('');
-      setUnitType('');
-      setPriority('')
-      setShowError(false);
-      setShowWarning(true)
-    } else {
-      setShowError(true);
-      
-    }
-  };
-
-  const handleDeleteUnitNumber = (index) => {
-    const updatedUnitInfo = customerFleet.filter((_, i) => i !== index);
-    setCustomerFleet(updatedUnitInfo);
-  };
-
-
-  const handleAddUnitInfo = ({ position, specifics, treadDepth, neededTire }) => {
-    if (position.trim() !== '' || specifics.trim() !== '' || treadDepth.trim() !== '' || neededTire.trim() !== '') {
-      const updatedUnitInfo = [...customerFleet];
-      const details = {
-        position: position.trim(),
-        specifics: specifics.trim(), 
-        treadDepth: treadDepth.trim(),
-        neededTire: neededTire.trim(),
-      };
-      updatedUnitInfo[currentUnitIndex].TaskSpecifics.push(details);
-      setCustomerFleet(updatedUnitInfo);
-    }
-    setShowPopup(false);
-  };
-
-
-  const submitFleet = () => {
-    if (customerFleet.length > 0) {
-      createFleetDatabase('fleets', customerFleet);
-       setCustomerFleet([]);
-       setSelectedCustomer('')
-       setShowUnitInputs(false)
-    }
-  };
+const FleetForm = () => {
+  const [unitType, setUnitType] = useState("");
+  const [urgency, setUrgency] = useState("");
+  const [unitNumber, setUnitNumber] = useState("");
+  const [fleetDate, setFleetDate] = useState(null);
+  const [units, setUnits] = useState([]);
+  const [unitSpecifics, setUnitSpecifics] = useState({});
+  const [unitImages, setUnitImages] = useState({});
+  const [selectedUnitIndex, setSelectedUnitIndex] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'fleets'));
-        const fetchedFleet = [];
-        querySnapshot.forEach((doc) => {
-          fetchedFleet.push({ id: doc.id, ...doc.data() });
-        });
-        setFleetsFromFirestore(fetchedFleet);
-      } catch (error) {
-        console.error('Error fetching documents: ', error);
-      }
-    };
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      setUserId(currentUser.uid);
 
-    fetchData();
+      const getUserDetails = async () => {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setUserName(`${data.firstName} ${data.lastName}`);
+        }
+      };
+
+      getUserDetails();
+    }
   }, []);
 
+  const handleAddUnit = () => {
+    if (!unitType || !unitNumber || !urgency) {
+      alert("Please fill in all fields");
+      return;
+    }
 
+    const date = new Date().toLocaleDateString();
+    if (!fleetDate) setFleetDate(date);
 
-  const handleUploadClick = (unitIndex) => {
-    setCurrentUnitIndex(unitIndex);
-    setCommentInputVisible(true);
+    setUnits([
+      ...units,
+      {
+        unitType,
+        unitNumber,
+        urgency,
+        date,
+      },
+    ]);
+
+    setUnitType("");
+    setUnitNumber("");
+    setUrgency("");
   };
 
-
-  let isSubmitting = false; // Add a flag to track submissions
-
-  const handleCommentSubmit = () => {
-    if (isSubmitting) return; // Prevent double submission
-    isSubmitting = true; // Set flag to true when submit is clicked
-  
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.multiple = true;
-
-    
-    fileInput.onchange = (e) => {
-      const files = Array.from(e.target.files);
-  
-      // Check for duplicate filenames before upload
-      const isDuplicate = files.some(file => customerFleet[currentUnitIndex]?.imageUrls?.includes(file.name));
-      if (isDuplicate) {
-        console.warn('Duplicate image detected, skipping upload.');
-        isSubmitting = false; // Reset submission flag
-        return;
-      }
-  
-      compressAndUploadImages(currentUnitIndex, files, comment1, comment2);
-  
-      // Clear file input after submission to prevent resubmission
-      fileInput.value = null;
-  
-      setTimeout(() => {
-        isSubmitting = false; // Reset flag after upload completes
-      }, 1000); // Add a delay to ensure multiple submissions can't happen too fast
-    };
-  
-    fileInput.click();
-    setCommentInputVisible(false);
+  const handleDeleteUnit = (index) => {
+    setUnits(units.filter((_, i) => i !== index));
+    const updated = { ...unitSpecifics };
+    delete updated[index];
+    setUnitSpecifics(updated);
   };
-  
-  
 
-  const compressAndUploadImages = async (unitIndex, files, comment1, comment2) => {
+  const handleSubmitFleet = async () => {
+    if (!userId || units.length === 0) {
+      alert("Please login and add units");
+      return;
+    }
+
     try {
-      setIsLoading(true);
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      };
-  
-      const compressedFiles = await Promise.all(
-        files.map(async (file) => {
-          return await imageCompression(file, options);
-        })
-      );
-  
-      await uploadImages(unitIndex, compressedFiles, comment1, comment2); // Pass both comments
-    } catch (error) {
-      console.error('Error compressing images:', error);
-    } finally {
-      setIsLoading(false); // Stop loading
+      const fleetRef = collection(db, "fleets");
+      const q = query(fleetRef, where("fleetDate", "==", fleetDate), where("userId", "==", userId));
+      const snapshot = await getDocs(q);
+
+      const formattedUnits = units.map((unit, i) => ({
+        ...unit,
+        specifics: unitSpecifics[i] || [],
+        imageUrl: unitImages[i] || [],
+      }));
+
+      if (!snapshot.empty) {
+        const fleetDoc = snapshot.docs[0];
+        await updateDoc(doc(db, "fleets", fleetDoc.id), {
+          units: [...fleetDoc.data().units, ...formattedUnits],
+        });
+        alert("Fleet updated successfully");
+      } else {
+        await addDoc(fleetRef, {
+          userId,
+          fleetDate,
+          units: formattedUnits,
+          timestamp: new Date(),
+        });
+        alert("Fleet created successfully");
+      }
+
+      setUnits([]);
+      setUnitSpecifics({});
+      setUnitImages({});
+      setFleetDate(null);
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting fleet");
     }
   };
-  
 
-  const uploadImages = async (unitIndex, files, comment1, comment2) => {
-    try {
-      const existingUnit = customerFleet[unitIndex];
-      const existingImageUrls = existingUnit?.imageUrls || [];
-      const existingComments = existingUnit?.comments || [];
-  
-      const newImageUrls = await Promise.all(
-        files.map(async (file) => {
-          const storageRef = ref(storage, `${existingUnit.UnitNumber}/${file.name}`);
-          await uploadBytes(storageRef, file);
-          return getDownloadURL(storageRef);
-        })
-      );
-  
-      const commentIndex = existingComments.findIndex(
-        (comment) => comment.comment1.trim() === comment1.trim() && comment.comment2.trim() === comment2.trim()
-      );
-      
-  
-      if (commentIndex !== -1) {
-        existingComments[commentIndex].imageUrls = [
-          ...new Set([...(existingComments[commentIndex].imageUrls || []), ...newImageUrls])
-        ];
-      } else {
-        existingComments.push({
-          comment1,
-          comment2,
-          imageUrls: newImageUrls,
+  const handleSpecificsDone = (specifics) => {
+    if (selectedUnitIndex !== null) {
+      setUnitSpecifics({ ...unitSpecifics, [selectedUnitIndex]: specifics });
+    }
+    setModalOpen(false);
+  };
+
+  const handleDrop = async (acceptedFiles, index) => {
+    const file = acceptedFiles[0];
+    const storageRef = ref(storage, `unitImages/${Date.now()}_${file.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      "state_changed",
+      null,
+      (error) => {
+        console.error(error);
+        alert("Upload failed");
+      },
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        setUnitImages((prev) => {
+          const newImages = { ...prev };
+          if (newImages[index]) {
+            newImages[index].push(url);
+          } else {
+            newImages[index] = [url];
+          }
+          return newImages;
         });
       }
-  
-      const updatedUnit = { ...existingUnit, comments: existingComments };
-      const updatedCustomerFleet = [...customerFleet];
-      updatedCustomerFleet[unitIndex] = updatedUnit;
-      setCustomerFleet(updatedCustomerFleet);
-  
-      const fleetRef = doc(db, 'fleets', existingUnit.id);
-      await updateDoc(fleetRef, {
-        comments: existingComments,
-      });
-  
-      console.log('Images and comments uploaded successfully');
-      setCommentInputVisible(false);
-      setComment1('');
-      setComment2('');
-    } catch (error) {
-      console.error('Error uploading images and comments:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  
-
-  const ByCustomer = {};
-  FleetsFromFirestore.forEach((unit) => {
-    if (!ByCustomer[unit.customer]) {
-      ByCustomer[unit.customer] = [];
-    }
-    ByCustomer[unit.customer].push(unit);
-  });
-
-  const getCustomerProgress = (cust) => {
-    const totalTodos = ByCustomer[cust]?.length || 0;
-    const completedTodos = ByCustomer[cust]?.filter((unit) => unit.done).length || 0;
-
-    return totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
-  };
-
-  const toggleCustomerForCategory = (cust) => {
-    if (showCustomerCategory === cust) {
-      setShowCustomerForCategory(null);
-    } else {
-      setShowCustomerForCategory(cust);
-    }
-  };
-
-  const getCustomerFleetCount = (cust) => {
-    return ByCustomer[cust]?.length || 0;
-  };
-
-  const getCustomerCompletedCount = (cust) => {
-    return ByCustomer[cust]?.filter((unit) => unit.done).length || 0;
-  };
-
-  const handleImageClick = (imageUrls) => {
-    setSelectedImageUrl(imageUrls);
-    setCurrentImageIndex(0);
-    setImagePopupVisible(true);
-  };
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % selectedImageUrl.length);
-  };
-
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prevIndex) => 
-      (prevIndex === 0 ? selectedImageUrl.length : prevIndex) - 1
     );
   };
 
-  const handlers = useSwipeable({
-    onSwipedLeft: handleNextImage,
-    onSwipedRight: handlePrevImage,
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: true,
-  });
-
-  const closeImagePopup = () => {
-    setImagePopupVisible(false);
-    setSelectedImageUrl([]);
+  const handleDeleteImage = (unitIndex, imgIndex) => {
+    const updatedImages = { ...unitImages };
+    updatedImages[unitIndex].splice(imgIndex, 1);
+    setUnitImages(updatedImages);
   };
 
-
-const UnitImages = ({ comments }) => {
-  if (!comments || comments.length === 0) return null;
-
   return (
-    <div>
-      {comments.map((comment, index) => (
-        <div key={index} className="image-comment-container">
-          <div className="comments">
-            <p><strong>Position:</strong> {comment.comment1}</p>
-            <p><strong>Tread Depth:</strong> {comment.comment2}/32</p>
+<div className="fleetform-container">
+  <h2 className="fleetform-heading">Welcome, {userName}</h2>
+  <h3 className="fleetform-subheading">Fleet Date: {fleetDate || "Not Set"}</h3>
+
+  <div className="fleetform-form-group">
+    <label htmlFor="unitType">Unit Type</label>
+    <select id="unitType" value={unitType} onChange={(e) => setUnitType(e.target.value)} className="fleetform-select">
+      <option value="">Select Unit Type</option>
+      <option value="Truck">Truck</option>
+      <option value="Trailer">Trailer</option>
+    </select>
+  </div>
+
+  <div className="fleetform-form-group-unit-number">
+    <label htmlFor="unitNumber">Unit Number</label>
+    <input
+      type="text"
+      id="unitNumber"
+      className="fleetform-input"
+      placeholder="Unit Number"
+      value={unitNumber}
+      onChange={(e) => setUnitNumber(e.target.value)}
+    />
+  </div>
+
+  <div className="fleetform-form-group">
+    <label htmlFor="urgency">Urgency</label>
+    <select id="urgency" value={urgency} onChange={(e) => setUrgency(e.target.value)} className="fleetform-select">
+      <option value="">Select Urgency</option>
+      <option value="Emergency">Emergency</option>
+      <option value="Urgent">Urgent</option>
+      <option value="Non-Urgent">Non-Urgent</option>
+    </select>
+  </div>
+
+  <button className="fleetform-add-unit-button" onClick={handleAddUnit}>Add Unit</button>
+
+  <div className="fleetform-units-list">
+    {units.map((unit, index) => (
+      <div key={index} className="fleetform-unit-card">
+        <button
+  className="fleetform-x-button"
+  onClick={() => handleDeleteUnit(index)}
+  title="Delete Unit"
+>
+  &times;
+</button>
+        <p className="fleetform-unit-info">{unit.unitType} #{unit.unitNumber}</p>
+        <p className="fleetform-unit-urgency">Urgency: {unit.urgency}</p>
+
+        {unitSpecifics[index] && (
+          <div className="fleetform-unit-specifics">
+            <strong>Specifics:</strong>
+            {unitSpecifics[index].map((s, i) => (
+              <p key={i}>
+                {s.position} - {s.ServiceType} - {s.treadDepth} - {s.selectedTire}
+              </p>
+            ))}
           </div>
-          <div className="image-stack">
-            {comment.imageUrls && comment.imageUrls.length > 1 ? (
-              <div
-                className="image-overlay"
-                onClick={() => handleImageClick(comment.imageUrls)}
-              >
-                {comment.imageUrls.slice(0, 3).map((url, imgIndex) => (
-                  <img
-                    key={imgIndex}
-                    src={url}
-                    alt={`Thumbnail ${imgIndex + 1}`}
-                    className={`thumbnail-image ${
-                      imgIndex === 0 ? 'top' : 'stacked'
-                    }`}
-                  />
-                ))}
-              </div>
-            ) : comment.imageUrls && comment.imageUrls.length === 1 ? (
-              <img
-                src={comment.imageUrls[0]}
-                alt="Single Image"
-                className="single-image"
-                onClick={() => handleImageClick(comment.imageUrls)}
-              />
-            ) : null}
-          </div>
+        )}
+
+        <Dropzone onDrop={(files) => handleDrop(files, index)}>
+          {({ getRootProps, getInputProps }) => (
+            <div {...getRootProps()} className="fleetform-dropzone">
+              <input {...getInputProps()} />
+              <p>Upload Image</p>
+            </div>
+          )}
+        </Dropzone>
+
+        <div className="fleetform-unit-card__image-preview">
+          {(unitImages[index] || []).map((url, i) => (
+            <div key={i} className="fleetform-image-preview-item" style={{ position: "relative" }}>
+  <img src={url} alt="unit" />
+  <button
+    className="fleetform-remove-image-button"
+    onClick={() => handleDeleteImage(index, i)}
+  >
+    &times;
+  </button>
+</div>
+          ))}
         </div>
-      ))}
-    </div>
+
+        <button
+          className="fleetform-add-specifics-button"
+          onClick={() => {
+            setSelectedUnitIndex(index);
+            setModalOpen(true);
+          }}
+        >
+          Add Specifics
+        </button>
+      </div>
+    ))}
+  </div>
+
+  <button className="fleetform-submit-button" onClick={handleSubmitFleet}>Submit Fleet</button>
+</div>
+
   );
 };
 
-
-  
-
-  return (
-    <div>
-      <div className='current user'>
-        <p className='username'>Welcome,</p>
-        {/* <button>Log out</button> */}
-      </div>
-      <h1 className='title'>FleetPro</h1>
-
-      <div className='customer-creation'>
-      {!showUnitInputs && (
-        <button onClick={handleStart} className='start-button'>Start</button>
-      )}
-      </div>
-
-      {showUnitInputs && (
-  <>
-    <h2 className='customer'>Fleet: {selectedCustomer}</h2>
-    
-    <div className='input-section'>
-      <select
-        value={unitType}
-        onChange={(e) => setUnitType(e.target.value)}
-        className={`unit-select ${showError && !unitType ? 'error' : ''}`}
-      >
-        <option value="" disabled>Choose Unit Type</option>
-        <option value="TRK">Truck</option>
-        <option value="TRL">Trailer</option>
-      </select>
-      <input
-        type='text'
-        value={inputValue}
-        onChange={handleInputChange}
-        placeholder='Enter Unit Number'
-        className={`unit-input ${showError && inputValue.trim() === '' ? 'error' : ''}`}
-      />
-      <select
-        onChange={(e) => setPriority(e.target.value)}
-        value={priority}
-        className={`unit-select ${showError && !priority ? 'error' : ''}`}
-      >
-        <option value="" disabled>Choose Urgency</option>
-        <option value="low">Dropped Unit</option>
-        <option value="medium">Leaving soon</option>
-        <option value="high">Driver Waiting</option>
-      </select>
-      <button onClick={handleAddingUnitNumber} className='add-button'>
-        Add
-      </button>
-
-
-
-      <ul className="unit-list">
-
-      {showWarning && (
-    <h4 className='imagesteps'>Upload Images From Photo Library</h4>
-  )}
-      
-        {customerFleet.map((unit, index) => {
-          if (selectedCustomer === 'All' || unit.customer === selectedCustomer) {
-            return (
-              <li key={index} className={`unit-card priority-${unit.priority}`}>
-                <strong>Unit Number:</strong> {unit.unitType} {unit.UnitNumber}
-                <div className='fleet-button'>
-                  <button className='unit-button'
-                    onClick={() => {
-                      setCurrentUnitIndex(index);
-                      setShowPopup(true);
-                    }}
-                  >
-                    Add Specifics
-                  </button>
-                  <button onClick={() => handleUploadClick(index)} className='unit-button'>Upload Image</button>
-                </div>
-                <ul>
-                  {unit.TaskSpecifics.map((details, subIndex) => (
-                    <li key={subIndex}>
-                      <strong>Position:</strong> {details.position}, <strong>Specifics:</strong> {details.specifics}, <strong>Tread Depth:</strong> {details.treadDepth}/32<br />
-                      <p className='tireNeeded'><strong>Tire Needed:</strong> {details.neededTire}</p>
-                    </li>
-                  ))}
-                </ul>
-                <UnitImages imageUrls={unit.imageUrls} comments={unit.comments} />
-                <button className='delete-button' onClick={() => handleDeleteUnitNumber(index)}>Delete</button>
-              </li>
-            );
-          }
-          return null;
-        })}
-      </ul>
-
-      {showPopup && (
-        <>
-          <div className="overlay" onClick={() => setShowPopup(false)} />
-          <div className="specifics-popup">
-            <FleetSpecifics onClose={() => setShowPopup(false)} onSave={handleAddUnitInfo} unitType={customerFleet[currentUnitIndex]?.unitType}/>
-          </div>
-        </>
-      )}
-      <button className='submission-button' onClick={submitFleet}>submit</button>
-    </div>
-  </>
-)}
-
-
-      {commentInputVisible && (
-        <>
-          <div className="overlay" onClick={() => setCommentInputVisible(false)} />
-          <div className="comment-popup">
-            <input
-              type="text"
-              value={comment1}
-              onChange={(e) => setComment1(e.target.value)}
-              placeholder="Enter Position"
-            />
-
-<input
-  type="number"
-  value={comment2}
-  onChange={(e) => setComment2(e.target.value)}
-  placeholder="Tread Depth"
-/>
-            <button onClick={handleCommentSubmit}>Enter Position and Upload Images</button>
-          </div>
-        </>
-      )}
-
-{isImagePopupVisible && (
-  <div className="image-popup" {...handlers}>
-    {selectedImageUrl.length > 1 && (
-      <>
-        <button className="nav-button left" onClick={handlePrevImage}>
-          &lt;
-        </button>
-        <button className="nav-button right" onClick={handleNextImage}>
-          &gt;
-        </button>
-      </>
-    )}
-    <img
-      src={selectedImageUrl[currentImageIndex]}
-      alt="Popup"
-      className="popup-image"
-    />
-    <button className="close-button" onClick={closeImagePopup}>
-      X
-    </button>
-  </div>
-)}
-
-{isLoading && (
-        <div className="loading-overlay">
-          <Oval 
-          height="80" 
-          width="80" 
-          color="#4fa94d" 
-          ariaLabel="oval-loading" 
-          secondaryColor="#4fa94d" 
-          strokeWidth={2} 
-          strokeWidthSecondary={2} 
-          />
-        </div>
-      )}
-
-
-<div className="category-cards">
-
-    <h1>See how you're fleets are doing!</h1>
-{Object.keys(ByCustomer).map((Fleetcustomer) => (
-  <div key={Fleetcustomer} className="category-card">
-    <div
-      onClick={() => toggleCustomerForCategory(Fleetcustomer)}
-      className={`category-header ${showCustomerCategory === Fleetcustomer ? 'active' : ''}`}
-    >
-      <h3>{Fleetcustomer} - {getCustomerCompletedCount(Fleetcustomer)}/{getCustomerFleetCount(Fleetcustomer)} Units</h3>
-      <div className="progress-bar">
-        <div
-          className="progress-bar-fill"
-          style={{ width: `${getCustomerProgress(Fleetcustomer)}%` }}
-        ></div>
-      </div>
-      <p>{getCustomerProgress(Fleetcustomer).toFixed(2)}% Complete</p>
-    </div>
-    {showCustomerCategory === Fleetcustomer && (
-      <ul className="fleet-list">
-        {ByCustomer[Fleetcustomer]
-        .sort((unitA, unitB) => {
-        const priorityOrder = { low: 3, medium: 2, high: 1 };
-        return priorityOrder[unitA.priority] - priorityOrder[unitB.priority];
-        }).map((unit) => (
-          <li key={unit.id} className={`unit-card priority-${unit.priority} ${unit.done ? 'done' : ''}`}>                   
-            <strong>Unit Number:</strong> {unit.unitType} {unit.UnitNumber} <strong>Priority:</strong>{unit.priority}
-            <ul>
-              {unit.TaskSpecifics &&
-                unit.TaskSpecifics.length > 0 &&
-                unit.TaskSpecifics.map((info, index) => (
-                  <li key={index}>
-                    <strong>Position:</strong> {info.position}, <strong>Specifics:</strong>{' '}
-                    {info.specifics}, <strong>Tread Depth:</strong> {info.treadDepth}/32
-                    <p className='tireNeeded'><strong>Tire Needed:</strong> {info.neededTire}</p>
-                  </li>
-                ))}
-            </ul>
-            <UnitImages imageUrls={unit.imageUrls} comments={unit.comments} />
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
-))}
-</div>
-
-      
-    </div>
-  )
-}
-
-
-export default Fleetform
+export default FleetForm;

@@ -33,6 +33,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+                  <Route
+            path="/fleetform"
+            element={
+              <ProtectedRoute>
+                <Fleetform />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </div>

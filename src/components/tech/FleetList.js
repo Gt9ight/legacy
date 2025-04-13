@@ -3,6 +3,7 @@ import { db, auth } from "../utilis/Firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import "./fleetLIst.css";
+import { Link } from "react-router-dom";
 
 const FleetList = () => {
   const [searchUID, setSearchUID] = useState("");
@@ -169,7 +170,10 @@ const FleetList = () => {
           </div>
         )}
         <p>Once done simply close the page</p>
+        <h3>OR</h3>
+        <Link to='/fleetform'>Create FLeet</Link>
       </div>
+      
     </div>
   );
 };
