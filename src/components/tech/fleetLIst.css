@@ -152,7 +152,7 @@
   padding: 8px 12px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition:0.3s ease;
 }
 
 .complete-button:hover {
@@ -167,3 +167,7 @@
   background: #c82333;
 }
 
+
+.createFleet-button{
+  margin-bottom: 10px;
+}

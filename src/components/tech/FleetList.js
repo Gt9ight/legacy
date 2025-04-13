@@ -171,7 +171,10 @@ const FleetList = () => {
         )}
         <p>Once done simply close the page</p>
         <h3>OR</h3>
-        <Link to='/fleetform'>Create FLeet</Link>
+        <div className="createFleet-button">
+        <Link  to='/fleetform'>Create FLeet</Link>
+        </div>
+        
       </div>
       
     </div>

@@ -29,6 +29,8 @@ const FleetForm = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState("");
+  const [fleetId, setFleetId] = useState("");
+
 
   useEffect(() => {
     const auth = getAuth();
@@ -102,15 +104,16 @@ const FleetForm = () => {
         await updateDoc(doc(db, "fleets", fleetDoc.id), {
           units: [...fleetDoc.data().units, ...formattedUnits],
         });
-        alert("Fleet updated successfully");
+        setFleetId(fleetDoc.id); 
       } else {
-        await addDoc(fleetRef, {
+        const docRef = await addDoc(fleetRef, {
           userId,
           fleetDate,
           units: formattedUnits,
           timestamp: new Date(),
         });
-        alert("Fleet created successfully");
+        setFleetId(docRef.id);
+        
       }
 
       setUnits([]);
@@ -262,6 +265,20 @@ const FleetForm = () => {
   </div>
 
   <button className="fleetform-submit-button" onClick={handleSubmitFleet}>Submit Fleet</button>
+  {fleetId && (
+  <div className="fleetform-fleet-id-display">
+    <p><strong>Fleet ID:</strong> {fleetId}</p>
+    <button
+      className="fleetform-copy-button"
+      onClick={() => {
+        navigator.clipboard.writeText(fleetId);
+        alert("Fleet ID copied to clipboard!");
+      }}
+    >
+      Copy Fleet ID
+    </button>
+  </div>
+)}
 </div>
 
   );

@@ -223,6 +223,48 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+.fleetform-fleet-id-display {
+  margin-top: 20px;
+  padding: 16px;
+  border: 2px solid #007BFF;
+  border-radius: 12px;
+  background-color: #f0f8ff;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.1);
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+.fleetform-fleet-id-display p {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #333;
+}
+
+.fleetform-copy-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.fleetform-copy-button:hover {
+  background-color: #0056b3;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 /* Responsive */
 @media (max-width: 600px) {
@@ -241,4 +283,5 @@
     margin-bottom: 1.5rem;
     width: 377px;
   }
+  
 }
