@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
+import { getAuth, signOut } from "firebase/auth";
 import { db, storage } from "../utilis/Firebase";
 import {
   collection,
@@ -13,6 +13,8 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Dropzone from "react-dropzone";
+import { useNavigate } from "react-router-dom";
+
 import './fleetform.css'
 
 
@@ -31,6 +33,7 @@ const FleetForm = () => {
   const [userName, setUserName] = useState("");
   const [fleetId, setFleetId] = useState("");
 
+  const navigate = useNavigate();
 
   useEffect(() => {
     const auth = getAuth();
@@ -166,8 +169,30 @@ const FleetForm = () => {
     setUnitImages(updatedImages);
   };
 
+  const handleLogout = () => {
+    const auth = getAuth();
+    signOut(auth)
+      .then(() => {
+        window.location.reload(); // Reload or redirect to login
+      })
+      .catch((error) => {
+        console.error("Error signing out:", error);
+        alert("Error signing out");
+      });
+  };
+  
+
   return (
 <div className="fleetform-container">
+<div className="top-buttons">
+  <button className="search-button" onClick={() => navigate("/fleetlist")}>
+    Search Fleets
+  </button>
+  <button className="logout-button" onClick={handleLogout}>
+    Logout
+  </button>
+</div>
+
   <h2 className="fleetform-heading">Welcome, {userName}</h2>
   <h3 className="fleetform-subheading">Fleet Date: {fleetDate || "Not Set"}</h3>
 
@@ -276,6 +301,11 @@ const FleetForm = () => {
       }}
     >
       Copy Fleet ID
+    </button>
+    <button
+      className="fleetform-send-button"
+    >
+      Send Fleet ID
     </button>
   </div>
 )}

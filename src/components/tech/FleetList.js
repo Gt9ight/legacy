@@ -121,54 +121,95 @@ const FleetList = () => {
           </button>
         </div>
         {error && <p className="fleet-error">{error}</p>}
-        {fleetData && !selectedFleet && (
-          <div
-            className="fleet-summary-card"
-            onClick={() => setSelectedFleet(fleetData)}
-          >
-            <h3>{fleetData.fleetDate}</h3>
-            <p><strong>Units:</strong> {fleetData.units.length}</p>
-            <p className="click-to-view">Click to view details</p>
-          </div>
-        )}
-        {selectedFleet && (
-          <div className="fleet-details">
-            <h3 className="fleet-details-title">Fleet Details:</h3>
-            <p><strong>Date:</strong> {selectedFleet.fleetDate}</p>
-            <h4>Units:</h4>
-            <div className="fleet-units-container">
-              {selectedFleet.units.map((unit, index) => (
-                <div key={index} className={`fleet-unit-card ${unit.completed ? 'unit-completed' : ''}`}>
-                  <h5 className="unit-title">Unit {unit.unitNumber}</h5>
-                  <p><strong>Type:</strong> {unit.unitType}</p>
-                  <p><strong>Urgency:</strong> <span className={`urgency-${unit.urgency.toLowerCase()}`}>{unit.urgency}</span></p>
-                  <h6>Services:</h6>
-                  <ul className="service-list">
-                    {unit.specifics.map((service, sIndex) => (
-                      <li key={sIndex} className="service-item">
-                        {service.ServiceType} - {service.position} - {service.selectedTire} ({service.treadDepth})
-                      </li>
-                    ))}
-                  </ul>
-                  {unit.imageUrl && unit.imageUrl.length > 0 && (
-                    <div className="fleet-images">
-                      {unit.imageUrl.map((url, imgIndex) => (
-                        <img key={imgIndex} src={url} alt={`Unit ${unit.unitNumber}`} className="fleet-image" />
-                      ))}
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, index)} />
-                  <button onClick={() => markUnitComplete(index)} className="complete-button">
-                    {unit.completed ? "Unmark Complete" : "Mark as Complete"}
-                  </button>
-                  <p><strong>Completed By:</strong> {unit.completedBy ? unit.completedBy : "Not Completed"}</p>
-<p><strong>Completed At:</strong> {unit.completedAt ? new Date(unit.completedAt).toLocaleString() : "N/A"}</p>
+        {fleetData && !selectedFleet && (() => {
+  const completedCount = fleetData.units.filter((unit) => unit.completed).length;
+  const totalCount = fleetData.units.length;
+  const percentage = Math.round((completedCount / totalCount) * 100);
 
-                </div>
+  return (
+    <div
+      className="fleet-summary-card"
+      onClick={() => setSelectedFleet(fleetData)}
+    >
+      <h3>{fleetData.fleetDate}</h3>
+      <p><strong>Units:</strong> {totalCount}</p>
+
+      {/* Progress Bar with Percentage */}
+      <div className="progress-wrapper">
+        <div className="progress-container">
+          <div
+            className="progress-bar"
+            style={{ width: `${percentage}%` }}
+          ></div>
+        </div>
+        <span className="progress-text">{percentage}%</span>
+      </div>
+
+      <p>
+        Progress: {completedCount} / {totalCount} units completed
+      </p>
+
+      <p className="click-to-view">Click to view details</p>
+    </div>
+  );
+})()}
+
+{selectedFleet && (() => {
+  const completedCount = selectedFleet.units.filter((unit) => unit.completed).length;
+  const totalCount = selectedFleet.units.length;
+  const percentage = Math.round((completedCount / totalCount) * 100);
+
+  return (
+    <div className="fleet-details">
+      <h3 className="fleet-details-title">Fleet Details:</h3>
+      <p><strong>Date:</strong> {selectedFleet.fleetDate}</p>
+
+      {/* Progress Bar */}
+      <div className="progress-wrapper">
+        <div className="progress-container">
+          <div
+            className="progress-bar"
+            style={{ width: `${percentage}%` }}
+          ></div>
+        </div>
+        <span className="progress-text">{percentage}%</span>
+      </div>
+      
+
+      <div className="fleet-units-container">
+        {selectedFleet.units.map((unit, index) => (
+          <div key={index} className={`fleet-unit-card ${unit.completed ? 'unit-completed' : ''}`}>
+            <h5 className="unit-title">Unit {unit.unitNumber}</h5>
+            <p><strong>Type:</strong> {unit.unitType}</p>
+            <p><strong>Urgency:</strong> <span className={`urgency-${unit.urgency.toLowerCase()}`}>{unit.urgency}</span></p>
+            <h6>Services:</h6>
+            <ul className="service-list">
+              {unit.specifics.map((service, sIndex) => (
+                <li key={sIndex} className="service-item">
+                  {service.ServiceType} - {service.position} - {service.selectedTire} ({service.treadDepth})
+                </li>
               ))}
-            </div>
+            </ul>
+            {unit.imageUrl && unit.imageUrl.length > 0 && (
+              <div className="fleet-images">
+                {unit.imageUrl.map((url, imgIndex) => (
+                  <img key={imgIndex} src={url} alt={`Unit ${unit.unitNumber}`} className="fleet-image" />
+                ))}
+              </div>
+            )}
+            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, index)} />
+            <button onClick={() => markUnitComplete(index)} className="complete-button">
+              {unit.completed ? "Unmark Complete" : "Mark as Complete"}
+            </button>
+            <p><strong>Completed By:</strong> {unit.completedBy ? unit.completedBy : "Not Completed"}</p>
+            <p><strong>Completed At:</strong> {unit.completedAt ? new Date(unit.completedAt).toLocaleString() : "N/A"}</p>
           </div>
-        )}
+        ))}
+      </div>
+    </div>
+  );
+})()}
+
         <p>Once done simply close the page</p>
         <h3>OR</h3>
         <div className="createFleet-button">

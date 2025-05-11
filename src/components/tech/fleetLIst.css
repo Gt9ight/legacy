@@ -171,3 +171,30 @@
 .createFleet-button{
   margin-bottom: 10px;
 }
+.progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.progress-container {
+  flex: 1;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4caf50; /* green progress */
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-weight: bold;
+  min-width: 40px;
+  text-align: right;
+}

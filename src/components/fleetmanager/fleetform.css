@@ -254,6 +254,60 @@
 .fleetform-copy-button:hover {
   background-color: #0056b3;
 }
+
+.fleetform-send-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #4ab165;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin: 5px;
+}
+
+.fleetform-send-button:hover {
+  background-color: #498455;
+}
+
+.logout-button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.logout-button:hover {
+  background-color: #e60000;
+}
+.top-buttons {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.search-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.search-button:hover {
+  background-color: #45a049;
+}
+
+
 @keyframes fadeIn {
   from {
     opacity: 0;
