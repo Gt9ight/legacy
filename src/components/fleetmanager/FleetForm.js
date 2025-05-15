@@ -328,38 +328,41 @@ const FleetForm = () => {
         Submit Fleet
       </button>
 
-      {fleetId && (
-        <div className="fleetform-fleet-id-display">
-          <p>
-            <strong>Fleet ID:</strong> {fleetId}
-          </p>
-          <button
-            className="fleetform-copy-button"
-            onClick={() => {
-              navigator.clipboard.writeText(fleetId);
-              alert("Fleet ID copied to clipboard!");
-            }}
-          >
-            Copy Fleet ID
-          </button>
+{fleetId && (
+  <div className="fleetform-fleet-id-display">
+    <p>
+      <strong>Fleet ID:</strong> {fleetId}
+    </p>
+    <button
+      className="fleetform-copy-button"
+      onClick={() => {
+        navigator.clipboard.writeText(fleetId);
+        alert("Fleet ID copied to clipboard!");
+      }}
+    >
+      Copy Fleet ID
+    </button>
 
-          <div className="fleetform-send-section">
-            <input
-              type="text"
-              placeholder="Enter recipient's username"
-              value={receiverUsername}
-              onChange={(e) => setReceiverUsername(e.target.value)}
-              className="fleetform-input"
-            />
-            <button className="fleetform-search-user-button" onClick={handleSearchUser}>
-              Search User
-            </button>
-            <button className="fleetform-send-button" onClick={handleSendFleetToUser}>
-              Send Fleet
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="fleetform-send-section">
+      <input
+        type="text"
+        placeholder="Enter recipient's username"
+        value={receiverUsername}
+        onChange={(e) => setReceiverUsername(e.target.value)}
+        className="fleetform-input fleetform-send-input"
+      />
+      <div className="fleetform-send-buttons">
+        <button className="fleetform-search-user-button" onClick={handleSearchUser}>
+          Search User
+        </button>
+        <button className="fleetform-send-button" onClick={handleSendFleetToUser}>
+          Send Fleet
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

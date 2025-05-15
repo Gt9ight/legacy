@@ -307,6 +307,43 @@
   background-color: #45a049;
 }
 
+.fleetform-send-section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fleetform-send-input {
+  max-width: 400px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.fleetform-send-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.fleetform-search-user-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin: 5px;
+}
+
+.fleetform-search-user-button:hover {
+  background-color: #0056b3;
+}
+
+
 
 @keyframes fadeIn {
   from {
