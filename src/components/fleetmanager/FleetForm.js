@@ -14,10 +14,7 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Dropzone from "react-dropzone";
 import { useNavigate } from "react-router-dom";
-
-import './fleetform.css'
-
-
+import "./fleetform.css";
 
 const FleetForm = () => {
   const [unitType, setUnitType] = useState("");
@@ -32,6 +29,9 @@ const FleetForm = () => {
   const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState("");
   const [fleetId, setFleetId] = useState("");
+
+  const [receiverUsername, setReceiverUsername] = useState("");
+  const [receiverId, setReceiverId] = useState(null);
 
   const navigate = useNavigate();
 
@@ -107,7 +107,7 @@ const FleetForm = () => {
         await updateDoc(doc(db, "fleets", fleetDoc.id), {
           units: [...fleetDoc.data().units, ...formattedUnits],
         });
-        setFleetId(fleetDoc.id); 
+        setFleetId(fleetDoc.id);
       } else {
         const docRef = await addDoc(fleetRef, {
           userId,
@@ -116,7 +116,6 @@ const FleetForm = () => {
           timestamp: new Date(),
         });
         setFleetId(docRef.id);
-        
       }
 
       setUnits([]);
@@ -172,145 +171,196 @@ const FleetForm = () => {
   const handleLogout = () => {
     const auth = getAuth();
     signOut(auth)
-      .then(() => {
-        window.location.reload(); // Reload or redirect to login
-      })
+      .then(() => window.location.reload())
       .catch((error) => {
         console.error("Error signing out:", error);
         alert("Error signing out");
       });
   };
-  
+
+  const handleSearchUser = async () => {
+    if (!receiverUsername) {
+      alert("Please enter a username");
+      return;
+    }
+
+    try {
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("username", "==", receiverUsername));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        setReceiverId(userDoc.id);
+        alert(`User found: ${userDoc.data().firstName} ${userDoc.data().lastName}`);
+      } else {
+        alert("User not found");
+      }
+    } catch (err) {
+      console.error("Error searching user:", err);
+      alert("Error searching for user");
+    }
+  };
+
+  const handleSendFleetToUser = async () => {
+    if (!fleetId || !receiverId) {
+      alert("Missing fleet ID or recipient");
+      return;
+    }
+
+    try {
+      const fleetRef = doc(db, "fleets", fleetId);
+      await updateDoc(fleetRef, {
+        userId: receiverId,
+      });
+      alert("Fleet successfully sent!");
+    } catch (err) {
+      console.error("Error sending fleet:", err);
+      alert("Failed to send fleet");
+    }
+  };
 
   return (
-<div className="fleetform-container">
-<div className="top-buttons">
-  <button className="search-button" onClick={() => navigate("/fleetlist")}>
-    Search Fleets
-  </button>
-  <button className="logout-button" onClick={handleLogout}>
-    Logout
-  </button>
-</div>
-
-  <h2 className="fleetform-heading">Welcome, {userName}</h2>
-  <h3 className="fleetform-subheading">Fleet Date: {fleetDate || "Not Set"}</h3>
-
-  <div className="fleetform-form-group">
-    <label htmlFor="unitType">Unit Type</label>
-    <select id="unitType" value={unitType} onChange={(e) => setUnitType(e.target.value)} className="fleetform-select">
-      <option value="">Select Unit Type</option>
-      <option value="Truck">Truck</option>
-      <option value="Trailer">Trailer</option>
-    </select>
-  </div>
-
-  <div className="fleetform-form-group-unit-number">
-    <label htmlFor="unitNumber">Unit Number</label>
-    <input
-      type="text"
-      id="unitNumber"
-      className="fleetform-input"
-      placeholder="Unit Number"
-      value={unitNumber}
-      onChange={(e) => setUnitNumber(e.target.value)}
-    />
-  </div>
-
-  <div className="fleetform-form-group">
-    <label htmlFor="urgency">Urgency</label>
-    <select id="urgency" value={urgency} onChange={(e) => setUrgency(e.target.value)} className="fleetform-select">
-      <option value="">Select Urgency</option>
-      <option value="Emergency">Emergency</option>
-      <option value="Urgent">Urgent</option>
-      <option value="Non-Urgent">Non-Urgent</option>
-    </select>
-  </div>
-
-  <button className="fleetform-add-unit-button" onClick={handleAddUnit}>Add Unit</button>
-
-  <div className="fleetform-units-list">
-    {units.map((unit, index) => (
-      <div key={index} className="fleetform-unit-card">
-        <button
-  className="fleetform-x-button"
-  onClick={() => handleDeleteUnit(index)}
-  title="Delete Unit"
->
-  &times;
-</button>
-        <p className="fleetform-unit-info">{unit.unitType} #{unit.unitNumber}</p>
-        <p className="fleetform-unit-urgency">Urgency: {unit.urgency}</p>
-
-        {unitSpecifics[index] && (
-          <div className="fleetform-unit-specifics">
-            <strong>Specifics:</strong>
-            {unitSpecifics[index].map((s, i) => (
-              <p key={i}>
-                {s.position} - {s.ServiceType} - {s.treadDepth} - {s.selectedTire}
-              </p>
-            ))}
-          </div>
-        )}
-
-        <Dropzone onDrop={(files) => handleDrop(files, index)}>
-          {({ getRootProps, getInputProps }) => (
-            <div {...getRootProps()} className="fleetform-dropzone">
-              <input {...getInputProps()} />
-              <p>Upload Image</p>
-            </div>
-          )}
-        </Dropzone>
-
-        <div className="fleetform-unit-card__image-preview">
-          {(unitImages[index] || []).map((url, i) => (
-            <div key={i} className="fleetform-image-preview-item" style={{ position: "relative" }}>
-  <img src={url} alt="unit" />
-  <button
-    className="fleetform-remove-image-button"
-    onClick={() => handleDeleteImage(index, i)}
-  >
-    &times;
-  </button>
-</div>
-          ))}
-        </div>
-
-        <button
-          className="fleetform-add-specifics-button"
-          onClick={() => {
-            setSelectedUnitIndex(index);
-            setModalOpen(true);
-          }}
-        >
-          Add Specifics
+    <div className="fleetform-container">
+      <div className="top-buttons">
+        <button className="search-button" onClick={() => navigate("/fleetlist")}>
+          Search Fleets
+        </button>
+        <button className="logout-button" onClick={handleLogout}>
+          Logout
         </button>
       </div>
-    ))}
-  </div>
 
-  <button className="fleetform-submit-button" onClick={handleSubmitFleet}>Submit Fleet</button>
-  {fleetId && (
-  <div className="fleetform-fleet-id-display">
-    <p><strong>Fleet ID:</strong> {fleetId}</p>
-    <button
-      className="fleetform-copy-button"
-      onClick={() => {
-        navigator.clipboard.writeText(fleetId);
-        alert("Fleet ID copied to clipboard!");
-      }}
-    >
-      Copy Fleet ID
-    </button>
-    <button
-      className="fleetform-send-button"
-    >
-      Send Fleet ID
-    </button>
-  </div>
-)}
-</div>
+      <h2 className="fleetform-heading">Welcome, {userName}</h2>
+      <h3 className="fleetform-subheading">Fleet Date: {fleetDate || "Not Set"}</h3>
 
+      <div className="fleetform-form-group">
+        <label htmlFor="unitType">Unit Type</label>
+        <select id="unitType" value={unitType} onChange={(e) => setUnitType(e.target.value)} className="fleetform-select">
+          <option value="">Select Unit Type</option>
+          <option value="Truck">Truck</option>
+          <option value="Trailer">Trailer</option>
+        </select>
+      </div>
+
+      <div className="fleetform-form-group-unit-number">
+        <label htmlFor="unitNumber">Unit Number</label>
+        <input
+          type="text"
+          id="unitNumber"
+          className="fleetform-input"
+          placeholder="Unit Number"
+          value={unitNumber}
+          onChange={(e) => setUnitNumber(e.target.value)}
+        />
+      </div>
+
+      <div className="fleetform-form-group">
+        <label htmlFor="urgency">Urgency</label>
+        <select id="urgency" value={urgency} onChange={(e) => setUrgency(e.target.value)} className="fleetform-select">
+          <option value="">Select Urgency</option>
+          <option value="Emergency">Emergency</option>
+          <option value="Urgent">Urgent</option>
+          <option value="Non-Urgent">Non-Urgent</option>
+        </select>
+      </div>
+
+      <button className="fleetform-add-unit-button" onClick={handleAddUnit}>
+        Add Unit
+      </button>
+
+      <div className="fleetform-units-list">
+        {units.map((unit, index) => (
+          <div key={index} className="fleetform-unit-card">
+            <button className="fleetform-x-button" onClick={() => handleDeleteUnit(index)} title="Delete Unit">
+              &times;
+            </button>
+            <p className="fleetform-unit-info">
+              {unit.unitType} #{unit.unitNumber}
+            </p>
+            <p className="fleetform-unit-urgency">Urgency: {unit.urgency}</p>
+
+            {unitSpecifics[index] && (
+              <div className="fleetform-unit-specifics">
+                <strong>Specifics:</strong>
+                {unitSpecifics[index].map((s, i) => (
+                  <p key={i}>
+                    {s.position} - {s.ServiceType} - {s.treadDepth} - {s.selectedTire}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <Dropzone onDrop={(files) => handleDrop(files, index)}>
+              {({ getRootProps, getInputProps }) => (
+                <div {...getRootProps()} className="fleetform-dropzone">
+                  <input {...getInputProps()} />
+                  <p>Upload Image</p>
+                </div>
+              )}
+            </Dropzone>
+
+            <div className="fleetform-unit-card__image-preview">
+              {(unitImages[index] || []).map((url, i) => (
+                <div key={i} className="fleetform-image-preview-item" style={{ position: "relative" }}>
+                  <img src={url} alt="unit" />
+                  <button className="fleetform-remove-image-button" onClick={() => handleDeleteImage(index, i)}>
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className="fleetform-add-specifics-button"
+              onClick={() => {
+                setSelectedUnitIndex(index);
+                setModalOpen(true);
+              }}
+            >
+              Add Specifics
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button className="fleetform-submit-button" onClick={handleSubmitFleet}>
+        Submit Fleet
+      </button>
+
+      {fleetId && (
+        <div className="fleetform-fleet-id-display">
+          <p>
+            <strong>Fleet ID:</strong> {fleetId}
+          </p>
+          <button
+            className="fleetform-copy-button"
+            onClick={() => {
+              navigator.clipboard.writeText(fleetId);
+              alert("Fleet ID copied to clipboard!");
+            }}
+          >
+            Copy Fleet ID
+          </button>
+
+          <div className="fleetform-send-section">
+            <input
+              type="text"
+              placeholder="Enter recipient's username"
+              value={receiverUsername}
+              onChange={(e) => setReceiverUsername(e.target.value)}
+              className="fleetform-input"
+            />
+            <button className="fleetform-search-user-button" onClick={handleSearchUser}>
+              Search User
+            </button>
+            <button className="fleetform-send-button" onClick={handleSendFleetToUser}>
+              Send Fleet
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
