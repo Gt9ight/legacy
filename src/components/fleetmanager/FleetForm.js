@@ -29,6 +29,8 @@ const FleetForm = () => {
   const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState("");
   const [fleetId, setFleetId] = useState("");
+  const [customer, setCustomer] = useState("");
+
 
   const [receiverUsername, setReceiverUsername] = useState("");
   const [receiverId, setReceiverId] = useState(null);
@@ -60,8 +62,10 @@ const FleetForm = () => {
       return;
     }
 
-    const date = new Date().toLocaleDateString();
-    if (!fleetDate) setFleetDate(date);
+const date = new Date().toLocaleDateString();
+const fleetTitle = customer ? `${customer} - ${date}` : date;
+if (!fleetDate) setFleetDate(fleetTitle);
+
 
     setUnits([
       ...units,
@@ -90,6 +94,11 @@ const FleetForm = () => {
       alert("Please login and add units");
       return;
     }
+    if (!customer) {
+  alert("Please enter a customer name before submitting.");
+  return;
+}
+
 
     try {
       const fleetRef = collection(db, "fleets");
@@ -232,7 +241,20 @@ const FleetForm = () => {
       </div>
 
       <h2 className="fleetform-heading">Welcome, {userName}</h2>
-      <h3 className="fleetform-subheading">Fleet Date: {fleetDate || "Not Set"}</h3>
+      <h3 className="fleetform-subheading">Fleet: {fleetDate || "Not Set"}</h3>
+
+
+      <div className="fleetform-form-group">
+  <label htmlFor="customer">Customer</label>
+  <input
+    type="text"
+    id="customer"
+    className="fleetform-input"
+    placeholder="Enter Customer Name"
+    value={customer}
+    onChange={(e) => setCustomer(e.target.value)}
+  />
+</div>
 
       <div className="fleetform-form-group">
         <label htmlFor="unitType">Unit Type</label>
